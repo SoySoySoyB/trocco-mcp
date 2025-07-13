@@ -42,7 +42,7 @@ describe("GetResourceGroupsTool", () => {
         description: "Production environment resources",
       },
     ]);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("Production Resources");
   });
@@ -60,7 +60,7 @@ describe("GetResourceGroupsTool", () => {
   it("正常系: レスポンスが空配列の場合でも正常に返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([]);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("[]");
   });
@@ -72,7 +72,7 @@ describe("GetResourceGroupsTool", () => {
       { id: 2, name: "Resource Group 2", description: "RG2" },
       { id: 3, name: "Resource Group 3", description: "RG3" },
     ]);
-    const result = await tool.execute({ fetch_all: true, limit: 1 });
+    const result = await tool.execute({ fetch_all: true });
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
     expect(data).toHaveLength(3);
@@ -83,7 +83,7 @@ describe("GetResourceGroupsTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -99,7 +99,7 @@ describe("GetResourceGroupsTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "リソースグループ一覧の取得に失敗しました",
@@ -114,15 +114,24 @@ describe("GetResourceGroupsTool", () => {
       ],
       isError: true,
     });
-    const result1 = await tool.execute({ limit: 0 });
+    const result1 = await tool.execute({ count: 0 });
     expect(result1.isError).toBeTruthy();
     expect(result1.content[0].text).toContain(
       "リソースグループ一覧の取得に失敗しました",
     );
-    const result2 = await tool.execute({ limit: 201 });
+    const result2 = await tool.execute({ count: 201 });
     expect(result2.isError).toBeTruthy();
     expect(result2.content[0].text).toContain(
       "リソースグループ一覧の取得に失敗しました",
     );
+  });
+
+  it("異常系: fetch_allがtrueでcountも指定された場合、バリデーションエラーが発生する", () => {
+    expect(() => {
+      tool.parameters.parse({
+        fetch_all: true,
+        count: 10,
+      });
+    }).toThrow();
   });
 });

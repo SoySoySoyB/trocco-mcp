@@ -2,12 +2,17 @@ import { z } from "zod";
 import { IMCPTool } from "../index.js";
 import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL } from "../constants.js";
-import { troccoRequest } from "../utils/requestTROCCO.js";
+import {
+  troccoRequest,
+  RequestOptionsInputSchema,
+} from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 const GetDatamartDefinitionDetailInputSchema = z.object({
-  datamart_definition_id: z.number(),
+  path_params: z.object({
+    datamart_definition_id: z.number(),
+  }),
 });
 
 export class GetDatamartDefinitionDetailTool implements IMCPTool {
@@ -38,17 +43,19 @@ export class GetDatamartDefinitionDetailTool implements IMCPTool {
     content: TextContent[];
     isError?: boolean;
   }> {
-    const path = `/api/datamart_definitions/${input.datamart_definition_id}`;
+    const path = `/api/datamart_definitions/${input.path_params.datamart_definition_id}`;
     const url = `${BASE_URL}${path}`;
     const apiKeyResult = validateApiKey();
     if (apiKeyResult.isInvalid) {
       return apiKeyResult.errorResponse;
     }
     try {
+      const options = {};
+      const parsed_options = RequestOptionsInputSchema.parse(options);
       const datamartDefinition = await troccoRequest(
         url,
         apiKeyResult.apiKey,
-        {},
+        parsed_options,
       );
       return {
         content: [
@@ -61,7 +68,7 @@ export class GetDatamartDefinitionDetailTool implements IMCPTool {
     } catch (error) {
       return createErrorResponse(
         error,
-        `データマート定義ID ${input.datamart_definition_id} の詳細取得に失敗しました`,
+        `データマート定義ID ${input.path_params.datamart_definition_id} の詳細取得に失敗しました`,
       );
     }
   }

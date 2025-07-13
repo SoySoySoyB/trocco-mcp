@@ -4,56 +4,76 @@ import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL } from "../constants.js";
 import {
   troccoRequestWithPagination,
-  RequestOptionsInputSchema,
+  PaginationRequestOptionsInputSchema,
 } from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 const GetLabelsInputSchema = z
   .object({
-    fetch_all: z.boolean().default(false).optional(),
-    limit: z.number().min(1).max(200).default(200).optional(),
-    job_definition_id: z
-      .number()
+    fetch_all: z
+      .boolean()
+      .default(false)
       .optional()
-      .describe(
-        "転送設定のID; 他のID指定パラメータと同時に指定することはできません",
-      ),
-    job_definition_bulk_id: z
+      .describe("全件取得フラグ: trueの場合、countは指定不可"),
+    count: z
       .number()
+      .min(1)
       .optional()
-      .describe(
-        "マネージド転送設定のID; 他のID指定パラメータと同時に指定することはできません",
-      ),
-    datamart_definition_id: z
-      .number()
+      .describe("取得したいアイテム数: fetch_allがtrueの場合は指定不可"),
+    query_params: z
+      .object({
+        job_definition_id: z
+          .number()
+          .optional()
+          .describe("転送設定のID: 他のID指定パラメータと同時に指定は不可能"),
+        job_definition_bulk_id: z
+          .number()
+          .optional()
+          .describe(
+            "マネージド転送設定のID: 他のID指定パラメータと同時に指定は不可能",
+          ),
+        datamart_definition_id: z
+          .number()
+          .optional()
+          .describe(
+            "データマート定義のID: 他のID指定パラメータと同時に指定は不可能",
+          ),
+        pipeline_definition_id: z
+          .number()
+          .optional()
+          .describe(
+            "ワークフロー定義のID: 他のID指定パラメータと同時に指定は不可能",
+          ),
+      })
       .optional()
-      .describe(
-        "データマート定義のID; 他のID指定パラメータと同時に指定することはできません",
-      ),
-    pipeline_definition_id: z
-      .number()
-      .optional()
-      .describe(
-        "ワークフロー定義のID; 他のID指定パラメータと同時に指定することはできません",
+      .refine(
+        /* c8 ignore start */
+        (data) => {
+          if (!data) return true;
+          const idFields = [
+            data.job_definition_id,
+            data.job_definition_bulk_id,
+            data.datamart_definition_id,
+            data.pipeline_definition_id,
+          ];
+          const definedIds = idFields.filter((id) => id !== undefined);
+          return definedIds.length <= 1;
+        },
+        /* c8 ignore stop */
+        {
+          message:
+            "複数のIDパラメータを同時に指定することはできません。job_definition_id、job_definition_bulk_id、datamart_definition_id、pipeline_definition_idのうち1つのみを指定してください。",
+        },
       ),
   })
   .refine(
-    /* c8 ignore start */
     (data) => {
-      const idFields = [
-        data.job_definition_id,
-        data.job_definition_bulk_id,
-        data.datamart_definition_id,
-        data.pipeline_definition_id,
-      ];
-      const definedIds = idFields.filter((id) => id !== undefined);
-      return definedIds.length <= 1;
+      return !(data.fetch_all === true && data.count !== undefined);
     },
-    /* c8 ignore stop */
     {
       message:
-        "複数のIDパラメータを同時に指定することはできません。job_definition_id、job_definition_bulk_id、datamart_definition_id、pipeline_definition_idのうち1つのみを指定してください。",
+        "fetch_allがtrueの場合、countを同時に指定することはできません。いずれか一方を指定してください。",
     },
   );
 
@@ -90,18 +110,16 @@ export class GetLabelsTool implements IMCPTool {
       return apiKeyResult.errorResponse;
     }
     try {
-      const { fetch_all = false, ...query_params } = input;
-      const input_options = {
-        params: {
-          query_params: query_params,
-        },
-        fetch_all: fetch_all,
+      const options = {
+        fetch_all: input.fetch_all,
+        count: input.count,
+        query_params: input.query_params,
       };
-      const options = RequestOptionsInputSchema.parse(input_options);
+      const parsed_options = PaginationRequestOptionsInputSchema.parse(options);
       const labels = await troccoRequestWithPagination(
         url,
         apiKeyResult.apiKey,
-        options,
+        parsed_options,
       );
       return {
         content: [

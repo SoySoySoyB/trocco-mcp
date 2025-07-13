@@ -42,8 +42,10 @@ describe("GetConnectionConfigurationDetailTool", () => {
       project_id: "my-project",
     });
     const result = await tool.execute({
-      connection_type: "bigquery",
-      connection_id: 10,
+      path_params: {
+        connection_type: "bigquery",
+        connection_id: 10,
+      },
     });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("10");
@@ -53,8 +55,10 @@ describe("GetConnectionConfigurationDetailTool", () => {
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
     const result = await tool.execute({
-      connection_type: "bigquery",
-      connection_id: 10,
+      path_params: {
+        connection_type: "bigquery",
+        connection_id: 10,
+      },
     });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
@@ -73,8 +77,10 @@ describe("GetConnectionConfigurationDetailTool", () => {
       isError: true,
     });
     const result = await tool.execute({
-      connection_type: "bigquery",
-      connection_id: 10,
+      path_params: {
+        connection_type: "bigquery",
+        connection_id: 10,
+      },
     });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
@@ -95,8 +101,10 @@ describe("GetConnectionConfigurationDetailTool", () => {
       isError: true,
     });
     const result = await tool.execute({
-      connection_type: "s3",
-      connection_id: 99999,
+      path_params: {
+        connection_type: "s3",
+        connection_id: 99999,
+      },
     });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
@@ -116,8 +124,10 @@ describe("GetConnectionConfigurationDetailTool", () => {
       isError: true,
     });
     const result = await tool.execute({
-      connection_type: "invalid_type" as any,
-      connection_id: 10,
+      path_params: {
+        connection_type: "invalid_type" as any,
+        connection_id: 10,
+      },
     });
     expect(result.isError).toBeTruthy();
   });

@@ -41,7 +41,9 @@ describe("GetUserDetailTool", () => {
       email: "yamada@example.com",
       role: "admin",
     });
-    const result = await tool.execute({ user_id: 1 });
+    const result = await tool.execute({
+      path_params: { user_id: 1 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("1");
     expect(result.content[0].text).toContain("山田太郎");
@@ -49,7 +51,9 @@ describe("GetUserDetailTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ user_id: 1 });
+    const result = await tool.execute({
+      path_params: { user_id: 1 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -63,7 +67,9 @@ describe("GetUserDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ user_id: 1 });
+    const result = await tool.execute({
+      path_params: { user_id: 1 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ユーザーID 1 の詳細取得に失敗しました",
@@ -79,7 +85,9 @@ describe("GetUserDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ user_id: 99999 });
+    const result = await tool.execute({
+      path_params: { user_id: 99999 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ユーザーID 99999 の詳細取得に失敗しました",

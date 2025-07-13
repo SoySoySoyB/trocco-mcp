@@ -4,20 +4,40 @@ import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL, NOTIFICATION_TYPES } from "../constants.js";
 import {
   troccoRequestWithPagination,
-  RequestOptionsInputSchema,
+  PaginationRequestOptionsInputSchema,
 } from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
-const GetNotificationsInputSchema = z.object({
-  notification_type: z
-    .enum(NOTIFICATION_TYPES)
-    .describe(
-      `通知種別: ${NOTIFICATION_TYPES.join(", ")}のいずれかの値のみ指定可能`,
-    ),
-  fetch_all: z.boolean().default(false).optional(),
-  limit: z.number().min(1).max(200).default(50).optional(),
-});
+const GetNotificationsInputSchema = z
+  .object({
+    fetch_all: z
+      .boolean()
+      .default(false)
+      .optional()
+      .describe("全件取得フラグ: trueの場合、countは指定不可"),
+    count: z
+      .number()
+      .min(1)
+      .optional()
+      .describe("取得したいアイテム数: fetch_allがtrueの場合は指定不可"),
+    path_params: z.object({
+      notification_type: z
+        .enum(NOTIFICATION_TYPES)
+        .describe(
+          `通知種別: ${NOTIFICATION_TYPES.join(", ")}のいずれかの値のみ指定可能`,
+        ),
+    }),
+  })
+  .refine(
+    (data) => {
+      return !(data.fetch_all === true && data.count !== undefined);
+    },
+    {
+      message:
+        "fetch_allがtrueの場合、countを同時に指定することはできません。いずれか一方を指定してください。",
+    },
+  );
 
 export class GetNotificationsTool implements IMCPTool {
   /**
@@ -45,25 +65,24 @@ export class GetNotificationsTool implements IMCPTool {
     content: TextContent[];
     isError?: boolean;
   }> {
-    const path = `/api/notification_destinations/${input.notification_type}`;
+    const path = `/api/notification_destinations/${input.path_params.notification_type}`;
     const url = `${BASE_URL}${path}`;
     const apiKeyResult = validateApiKey();
     if (apiKeyResult.isInvalid) {
       return apiKeyResult.errorResponse;
     }
     try {
-      const { notification_type, fetch_all = false, ...query_params } = input;
-      const input_options = {
-        params: {
-          query_params: query_params,
-        },
-        fetch_all: fetch_all,
+      const api_limit = 50; // getNotificationsのAPI制限値
+      const options = {
+        fetch_all: input.fetch_all,
+        count: input.count,
+        api_limit: api_limit,
       };
-      const options = RequestOptionsInputSchema.parse(input_options);
+      const parsed_options = PaginationRequestOptionsInputSchema.parse(options);
       const notifications = await troccoRequestWithPagination(
         url,
         apiKeyResult.apiKey,
-        options,
+        parsed_options,
       );
       return {
         content: [
@@ -76,7 +95,7 @@ export class GetNotificationsTool implements IMCPTool {
     } catch (error) {
       return createErrorResponse(
         error,
-        `${input.notification_type}の通知先一覧の取得に失敗しました`,
+        `${input.path_params.notification_type}の通知先一覧の取得に失敗しました`,
       );
     }
   }

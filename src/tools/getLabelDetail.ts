@@ -2,12 +2,17 @@ import { z } from "zod";
 import { IMCPTool } from "../index.js";
 import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL } from "../constants.js";
-import { troccoRequest } from "../utils/requestTROCCO.js";
+import {
+  troccoRequest,
+  RequestOptionsInputSchema,
+} from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 const GetLabelDetailInputSchema = z.object({
-  label_id: z.number(),
+  path_params: z.object({
+    label_id: z.number(),
+  }),
 });
 
 export class GetLabelDetailTool implements IMCPTool {
@@ -36,14 +41,20 @@ export class GetLabelDetailTool implements IMCPTool {
     content: TextContent[];
     isError?: boolean;
   }> {
-    const path = `/api/labels/${input.label_id}`;
+    const path = `/api/labels/${input.path_params.label_id}`;
     const url = `${BASE_URL}${path}`;
     const apiKeyResult = validateApiKey();
     if (apiKeyResult.isInvalid) {
       return apiKeyResult.errorResponse;
     }
     try {
-      const label = await troccoRequest(url, apiKeyResult.apiKey, {});
+      const options = {};
+      const parsed_options = RequestOptionsInputSchema.parse(options);
+      const label = await troccoRequest(
+        url,
+        apiKeyResult.apiKey,
+        parsed_options,
+      );
       return {
         content: [
           {
@@ -55,7 +66,7 @@ export class GetLabelDetailTool implements IMCPTool {
     } catch (error) {
       return createErrorResponse(
         error,
-        `ラベルID ${input.label_id} の詳細取得に失敗しました`,
+        `ラベルID ${input.path_params.label_id} の詳細取得に失敗しました`,
       );
     }
   }

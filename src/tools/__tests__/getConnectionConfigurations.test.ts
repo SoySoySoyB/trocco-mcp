@@ -57,7 +57,9 @@ describe("GetConnectionConfigurationsTool", () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(troccoRequestWithPagination).mockResolvedValue(mockResponse);
 
-    const result = await tool.execute({ connection_type: "bigquery" });
+    const result = await tool.execute({
+      path_params: { connection_type: "bigquery" },
+    });
 
     expect(result.isError).toBeUndefined();
     expect(result.content).toHaveLength(1);
@@ -82,8 +84,8 @@ describe("GetConnectionConfigurationsTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue(mockResponse);
 
     const result = await tool.execute({
-      connection_type: "s3",
-      limit: 10,
+      path_params: { connection_type: "s3" },
+      count: 10,
     });
 
     expect(result.isError).toBeUndefined();
@@ -105,7 +107,7 @@ describe("GetConnectionConfigurationsTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue(mockResponse);
 
     const result = await tool.execute({
-      connection_type: "mysql",
+      path_params: { connection_type: "mysql" },
       fetch_all: true,
     });
 
@@ -120,7 +122,9 @@ describe("GetConnectionConfigurationsTool", () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([]);
 
-    const result = await tool.execute({ connection_type: "snowflake" });
+    const result = await tool.execute({
+      path_params: { connection_type: "snowflake" },
+    });
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toBe("[]");
@@ -128,14 +132,18 @@ describe("GetConnectionConfigurationsTool", () => {
 
   it("異常系: 無効な接続タイプを指定した場合、バリデーションエラーが発生する", () => {
     expect(() => {
-      tool.parameters.parse({ connection_type: "invalid_type" });
+      tool.parameters.parse({
+        path_params: { connection_type: "invalid_type" },
+      });
     }).toThrow();
   });
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
 
-    const result = await tool.execute({ connection_type: "bigquery" });
+    const result = await tool.execute({
+      path_params: { connection_type: "bigquery" },
+    });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toBe("APIキーエラー");
@@ -156,7 +164,9 @@ describe("GetConnectionConfigurationsTool", () => {
       isError: true,
     });
 
-    const result = await tool.execute({ connection_type: "snowflake" });
+    const result = await tool.execute({
+      path_params: { connection_type: "snowflake" },
+    });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain(
@@ -169,13 +179,22 @@ describe("GetConnectionConfigurationsTool", () => {
     );
   });
 
-  it("異常系: limitが範囲外の場合、バリデーションエラーが発生する", () => {
+  it("異常系: countが0以下の場合、バリデーションエラーが発生する", () => {
     expect(() => {
-      tool.parameters.parse({ connection_type: "bigquery", limit: 0 });
+      tool.parameters.parse({
+        path_params: { connection_type: "bigquery" },
+        count: 0,
+      });
     }).toThrow();
+  });
 
+  it("異常系: fetch_allがtrueでcountも指定された場合、バリデーションエラーが発生する", () => {
     expect(() => {
-      tool.parameters.parse({ connection_type: "bigquery", limit: 201 });
+      tool.parameters.parse({
+        path_params: { connection_type: "bigquery" },
+        fetch_all: true,
+        count: 10,
+      });
     }).toThrow();
   });
 });

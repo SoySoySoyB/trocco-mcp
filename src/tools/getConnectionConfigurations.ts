@@ -4,20 +4,40 @@ import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL, CONNECTION_TYPES } from "../constants.js";
 import {
   troccoRequestWithPagination,
-  RequestOptionsInputSchema,
+  PaginationRequestOptionsInputSchema,
 } from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
-const GetConnectionConfigurationsInputSchema = z.object({
-  connection_type: z
-    .enum(CONNECTION_TYPES)
-    .describe(
-      `接続情報種別: ${CONNECTION_TYPES.join(", ")}のいずれかの値のみ指定可能`,
-    ),
-  fetch_all: z.boolean().default(false).optional(),
-  limit: z.number().min(1).max(200).default(200).optional(),
-});
+const GetConnectionConfigurationsInputSchema = z
+  .object({
+    fetch_all: z
+      .boolean()
+      .default(false)
+      .optional()
+      .describe("全件取得フラグ: trueの場合、countは指定不可"),
+    count: z
+      .number()
+      .min(1)
+      .optional()
+      .describe("取得したいアイテム数: fetch_allがtrueの場合は指定不可"),
+    path_params: z.object({
+      connection_type: z
+        .enum(CONNECTION_TYPES)
+        .describe(
+          `接続情報種別: ${CONNECTION_TYPES.join(", ")}のいずれかの値のみ指定可能`,
+        ),
+    }),
+  })
+  .refine(
+    (data) => {
+      return !(data.fetch_all === true && data.count !== undefined);
+    },
+    {
+      message:
+        "fetch_allがtrueの場合、countを同時に指定することはできません。いずれか一方を指定してください。",
+    },
+  );
 
 export class GetConnectionConfigurationsTool implements IMCPTool {
   /**
@@ -47,21 +67,18 @@ export class GetConnectionConfigurationsTool implements IMCPTool {
     content: TextContent[];
     isError?: boolean;
   }> {
-    const path = `/api/connections/${input.connection_type}`;
+    const path = `/api/connections/${input.path_params.connection_type}`;
     const url = `${BASE_URL}${path}`;
     const apiKeyResult = validateApiKey();
     if (apiKeyResult.isInvalid) {
       return apiKeyResult.errorResponse;
     }
     try {
-      const { connection_type, fetch_all = false, ...query_params } = input;
       const input_options = {
-        params: {
-          query_params: query_params,
-        },
-        fetch_all: fetch_all,
+        fetch_all: input.fetch_all,
+        count: input.count,
       };
-      const options = RequestOptionsInputSchema.parse(input_options);
+      const options = PaginationRequestOptionsInputSchema.parse(input_options);
       const connectionConfigurations = await troccoRequestWithPagination(
         url,
         apiKeyResult.apiKey,
@@ -78,7 +95,7 @@ export class GetConnectionConfigurationsTool implements IMCPTool {
     } catch (error) {
       return createErrorResponse(
         error,
-        `${input.connection_type}の接続情報一覧の取得に失敗しました`,
+        `${input.path_params.connection_type}の接続情報一覧の取得に失敗しました`,
       );
     }
   }

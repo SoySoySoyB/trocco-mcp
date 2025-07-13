@@ -41,7 +41,9 @@ describe("GetDatamartDefinitionDetailTool", () => {
       query: "SELECT * FROM sales",
       enabled: true,
     });
-    const result = await tool.execute({ datamart_definition_id: 200 });
+    const result = await tool.execute({
+      path_params: { datamart_definition_id: 200 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("200");
     expect(result.content[0].text).toContain("売上データマート");
@@ -49,7 +51,9 @@ describe("GetDatamartDefinitionDetailTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ datamart_definition_id: 200 });
+    const result = await tool.execute({
+      path_params: { datamart_definition_id: 200 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -66,7 +70,9 @@ describe("GetDatamartDefinitionDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ datamart_definition_id: 200 });
+    const result = await tool.execute({
+      path_params: { datamart_definition_id: 200 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "データマート定義ID 200 の詳細取得に失敗しました",
@@ -85,7 +91,9 @@ describe("GetDatamartDefinitionDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ datamart_definition_id: 99999 });
+    const result = await tool.execute({
+      path_params: { datamart_definition_id: 99999 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "データマート定義ID 99999 の詳細取得に失敗しました",

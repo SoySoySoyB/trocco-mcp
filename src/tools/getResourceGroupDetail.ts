@@ -2,12 +2,17 @@ import { z } from "zod";
 import { IMCPTool } from "../index.js";
 import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL } from "../constants.js";
-import { troccoRequest } from "../utils/requestTROCCO.js";
+import {
+  troccoRequest,
+  RequestOptionsInputSchema,
+} from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 const GetResourceGroupDetailInputSchema = z.object({
-  resource_group_id: z.number(),
+  path_params: z.object({
+    resource_group_id: z.number(),
+  }),
 });
 
 export class GetResourceGroupDetailTool implements IMCPTool {
@@ -38,14 +43,20 @@ export class GetResourceGroupDetailTool implements IMCPTool {
     content: TextContent[];
     isError?: boolean;
   }> {
-    const path = `/api/resource_groups/${input.resource_group_id}`;
+    const path = `/api/resource_groups/${input.path_params.resource_group_id}`;
     const url = `${BASE_URL}${path}`;
     const apiKeyResult = validateApiKey();
     if (apiKeyResult.isInvalid) {
       return apiKeyResult.errorResponse;
     }
     try {
-      const resourceGroup = await troccoRequest(url, apiKeyResult.apiKey, {});
+      const options = {};
+      const parsed_options = RequestOptionsInputSchema.parse(options);
+      const resourceGroup = await troccoRequest(
+        url,
+        apiKeyResult.apiKey,
+        parsed_options,
+      );
       return {
         content: [
           {
@@ -57,7 +68,7 @@ export class GetResourceGroupDetailTool implements IMCPTool {
     } catch (error) {
       return createErrorResponse(
         error,
-        `リソースグループID ${input.resource_group_id} の詳細取得に失敗しました`,
+        `リソースグループID ${input.path_params.resource_group_id} の詳細取得に失敗しました`,
       );
     }
   }

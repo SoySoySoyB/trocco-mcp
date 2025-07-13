@@ -38,7 +38,10 @@ describe("GetJobsTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([
       { id: 1, name: "job1", status: "succeeded" },
     ]);
-    const result = await tool.execute({ job_definition_id: 123, limit: 10 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 123 },
+      count: 10,
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("job1");
     expect(result.content[0].text).toContain("succeeded");
@@ -49,7 +52,9 @@ describe("GetJobsTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([
       { id: 2, name: "job2", status: "running" },
     ]);
-    const result = await tool.execute({ job_definition_id: 456 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 456 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("job2");
     expect(result.content[0].text).toContain("running");
@@ -61,10 +66,12 @@ describe("GetJobsTool", () => {
       { id: 3, name: "job3", status: "failed" },
     ]);
     const result = await tool.execute({
-      job_definition_id: 789,
-      start_time: "2024-01-01 00:00:00",
-      end_time: "2024-01-31 23:59:59",
-      time_zone: "Asia/Tokyo",
+      path_params: { job_definition_id: 789 },
+      query_params: {
+        start_time: "2024-01-01 00:00:00",
+        end_time: "2024-01-31 23:59:59",
+        time_zone: "Asia/Tokyo",
+      },
     });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("job3");
@@ -77,9 +84,9 @@ describe("GetJobsTool", () => {
       { id: 4, name: "job4" },
     ]);
     const result = await tool.execute({
-      job_definition_id: 111,
+      path_params: { job_definition_id: 111 },
       fetch_all: false,
-      limit: 5,
+      count: 5,
     });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("job4");
@@ -88,7 +95,9 @@ describe("GetJobsTool", () => {
   it("正常系: レスポンスが空配列の場合でも正常に返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([]);
-    const result = await tool.execute({ job_definition_id: 999 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 999 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("[]");
   });
@@ -103,9 +112,8 @@ describe("GetJobsTool", () => {
       { id: 14, name: "job14", status: "queued" },
     ]);
     const result = await tool.execute({
-      job_definition_id: 123,
+      path_params: { job_definition_id: 123 },
       fetch_all: true,
-      limit: 1,
     });
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
@@ -117,7 +125,9 @@ describe("GetJobsTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ job_definition_id: 123 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 123 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -131,7 +141,9 @@ describe("GetJobsTool", () => {
       content: [{ type: "text", text: "転送ジョブ一覧の取得に失敗しました" }],
       isError: true,
     });
-    const result = await tool.execute({ job_definition_id: 123 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 123 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "転送ジョブ一覧の取得に失敗しました",
@@ -144,15 +156,31 @@ describe("GetJobsTool", () => {
       content: [{ type: "text", text: "転送ジョブ一覧の取得に失敗しました" }],
       isError: true,
     });
-    const result1 = await tool.execute({ job_definition_id: 123, limit: 0 });
+    const result1 = await tool.execute({
+      path_params: { job_definition_id: 123 },
+      count: 0,
+    });
     expect(result1.isError).toBeTruthy();
     expect(result1.content[0].text).toContain(
       "転送ジョブ一覧の取得に失敗しました",
     );
-    const result2 = await tool.execute({ job_definition_id: 123, limit: 101 });
+    const result2 = await tool.execute({
+      path_params: { job_definition_id: 123 },
+      count: 101,
+    });
     expect(result2.isError).toBeTruthy();
     expect(result2.content[0].text).toContain(
       "転送ジョブ一覧の取得に失敗しました",
     );
+  });
+
+  it("異常系: fetch_allがtrueでcountも指定された場合、バリデーションエラーが発生する", () => {
+    expect(() => {
+      tool.parameters.parse({
+        path_params: { job_definition_id: 123 },
+        fetch_all: true,
+        count: 10,
+      });
+    }).toThrow();
   });
 });
