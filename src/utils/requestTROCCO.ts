@@ -81,6 +81,40 @@ type PaginationResponse<Item> = {
 };
 
 /**
+ * 1ページ分のデータを取得する
+ * @param url リクエストURL
+ * @param api_key APIキー
+ * @param options リクエストオプション
+ * @param cursor ページネーションカーソル
+ * @param limit 取得件数
+ * @returns ページネーションレスポンス
+ */
+async function fetchPage<Item>(
+  url: string,
+  api_key: string,
+  options: PaginationRequestOptions,
+  cursor: string | null,
+  limit: number,
+): Promise<PaginationResponse<Item>> {
+  const base = options.query_params ?? {};
+  const query_params = {
+    ...base,
+    ...(cursor && { cursor }),
+    limit,
+  };
+  const parsed_options = RequestOptionsInputSchema.parse({
+    method: options.method,
+    body_params: options.body_params,
+    query_params,
+  });
+  return await troccoRequest<PaginationResponse<Item>>(
+    url,
+    api_key,
+    parsed_options,
+  );
+}
+
+/**
  * ページネーション対応のTROCCO APIリクエストを送信する
  * @param url リクエストURL
  * @param api_key APIキー
@@ -98,65 +132,38 @@ export async function troccoRequestWithPagination<Item>(
 
   if (options.fetch_all) {
     do {
-      if (nextCursor) {
-        if (!options.query_params) {
-          options.query_params = {};
-        }
-        options.query_params.cursor = nextCursor;
-      }
-
-      if (!options.query_params) {
-        options.query_params = {};
-      }
-      options.query_params.limit = apiLimit;
-      let parsed_options = RequestOptionsInputSchema.parse(options);
-
-      const data: PaginationResponse<Item> = await troccoRequest<
-        PaginationResponse<Item>
-      >(url, api_key, parsed_options);
+      const data: PaginationResponse<Item> = await fetchPage<Item>(
+        url,
+        api_key,
+        options,
+        nextCursor,
+        apiLimit,
+      );
       items.push(...data.items);
       nextCursor = data.next_cursor;
     } while (nextCursor != null);
   } else if (options.count) {
     const targetCount = options.count;
-
     do {
-      if (nextCursor) {
-        if (!options.query_params) {
-          options.query_params = {};
-        }
-        options.query_params.cursor = nextCursor;
-      }
-
-      const remainingCount = targetCount - items.length;
-      const currentLimit = Math.min(remainingCount, apiLimit!);
-
-      if (!options.query_params) {
-        options.query_params = {};
-      }
-      options.query_params.limit = currentLimit;
-      let parsed_options = RequestOptionsInputSchema.parse(options);
-
-      const data: PaginationResponse<Item> = await troccoRequest<
-        PaginationResponse<Item>
-      >(url, api_key, parsed_options);
+      const limit = Math.min(targetCount - items.length, apiLimit);
+      const data: PaginationResponse<Item> = await fetchPage<Item>(
+        url,
+        api_key,
+        options,
+        nextCursor,
+        limit,
+      );
       items.push(...data.items);
       nextCursor = data.next_cursor;
-
-      if (items.length >= targetCount) {
-        break;
-      }
-    } while (nextCursor != null);
+    } while (nextCursor != null && items.length < targetCount);
   } else {
-    if (!options.query_params) {
-      options.query_params = {};
-    }
-    options.query_params.limit = apiLimit;
-    let parsed_options = RequestOptionsInputSchema.parse(options);
-
-    const data: PaginationResponse<Item> = await troccoRequest<
-      PaginationResponse<Item>
-    >(url, api_key, parsed_options);
+    const data: PaginationResponse<Item> = await fetchPage<Item>(
+      url,
+      api_key,
+      options,
+      null,
+      apiLimit,
+    );
     items.push(...data.items);
   }
 

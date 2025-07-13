@@ -154,7 +154,7 @@ describe("troccoRequestWithPagination", () => {
     // 2回目の呼び出しでcursorパラメータが追加されていることを確認
     expect(global.fetch).toHaveBeenNthCalledWith(
       2,
-      "https://trocco.io/api/items?limit=200&cursor=cursor-2",
+      "https://trocco.io/api/items?cursor=cursor-2&limit=200",
       expect.any(Object),
     );
   });
@@ -312,7 +312,7 @@ describe("troccoRequestWithPagination", () => {
     // 2回目の呼び出し - 残り2件なのでlimit=2
     expect(global.fetch).toHaveBeenNthCalledWith(
       2,
-      "https://trocco.io/api/items?limit=2&cursor=cursor-2",
+      "https://trocco.io/api/items?cursor=cursor-2&limit=2",
       expect.any(Object),
     );
   });
