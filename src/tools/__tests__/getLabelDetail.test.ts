@@ -41,7 +41,9 @@ describe("GetLabelDetailTool", () => {
       color: "#FF0000",
       description: "重要なリソースを示すラベル",
     });
-    const result = await tool.execute({ label_id: 5 });
+    const result = await tool.execute({
+      path_params: { label_id: 5 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("5");
     expect(result.content[0].text).toContain("重要");
@@ -49,7 +51,9 @@ describe("GetLabelDetailTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ label_id: 5 });
+    const result = await tool.execute({
+      path_params: { label_id: 5 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -61,7 +65,9 @@ describe("GetLabelDetailTool", () => {
       content: [{ type: "text", text: "ラベルID 5 の詳細取得に失敗しました" }],
       isError: true,
     });
-    const result = await tool.execute({ label_id: 5 });
+    const result = await tool.execute({
+      path_params: { label_id: 5 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ラベルID 5 の詳細取得に失敗しました",
@@ -77,7 +83,9 @@ describe("GetLabelDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ label_id: 99999 });
+    const result = await tool.execute({
+      path_params: { label_id: 99999 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ラベルID 99999 の詳細取得に失敗しました",

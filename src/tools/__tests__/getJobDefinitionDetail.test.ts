@@ -41,7 +41,9 @@ describe("GetJobDefinitionDetailTool", () => {
       description: "テスト用のジョブ定義",
       enabled: true,
     });
-    const result = await tool.execute({ job_definition_id: 100 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 100 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("100");
     expect(result.content[0].text).toContain("テストジョブ定義");
@@ -49,7 +51,9 @@ describe("GetJobDefinitionDetailTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ job_definition_id: 100 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 100 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -63,7 +67,9 @@ describe("GetJobDefinitionDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ job_definition_id: 100 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 100 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "転送設定ID 100 の詳細取得に失敗しました",
@@ -79,7 +85,9 @@ describe("GetJobDefinitionDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ job_definition_id: 99999 });
+    const result = await tool.execute({
+      path_params: { job_definition_id: 99999 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "転送設定ID 99999 の詳細取得に失敗しました",

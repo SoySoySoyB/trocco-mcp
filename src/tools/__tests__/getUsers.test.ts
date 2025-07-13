@@ -38,7 +38,7 @@ describe("GetUsersTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([
       { id: 1, name: "user1" },
     ]);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("user1");
   });
@@ -56,7 +56,7 @@ describe("GetUsersTool", () => {
   it("正常系: レスポンスが空配列の場合でも正常に返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([]);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("[]");
   });
@@ -70,7 +70,7 @@ describe("GetUsersTool", () => {
       { id: 4, name: "user4" },
       { id: 5, name: "user5" },
     ]);
-    const result = await tool.execute({ fetch_all: true, limit: 1 });
+    const result = await tool.execute({ fetch_all: true });
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
     expect(data).toHaveLength(5);
@@ -81,7 +81,7 @@ describe("GetUsersTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -95,28 +95,32 @@ describe("GetUsersTool", () => {
       content: [{ type: "text", text: "ユーザー一覧の取得に失敗しました" }],
       isError: true,
     });
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ユーザー一覧の取得に失敗しました",
     );
   });
 
-  it("異常系: limitが範囲外の場合、バリデーションエラーになる", async () => {
+  it("異常系: countが0の場合、バリデーションエラーになる", async () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(createErrorResponse).mockReturnValue({
       content: [{ type: "text", text: "ユーザー一覧の取得に失敗しました" }],
       isError: true,
     });
-    const result1 = await tool.execute({ limit: 0 });
-    expect(result1.isError).toBeTruthy();
-    expect(result1.content[0].text).toContain(
+    const result = await tool.execute({ count: 0 });
+    expect(result.isError).toBeTruthy();
+    expect(result.content[0].text).toContain(
       "ユーザー一覧の取得に失敗しました",
     );
-    const result2 = await tool.execute({ limit: 201 });
-    expect(result2.isError).toBeTruthy();
-    expect(result2.content[0].text).toContain(
-      "ユーザー一覧の取得に失敗しました",
-    );
+  });
+
+  it("異常系: fetch_allがtrueでcountも指定された場合、バリデーションエラーが発生する", () => {
+    expect(() => {
+      tool.parameters.parse({
+        fetch_all: true,
+        count: 10,
+      });
+    }).toThrow();
   });
 });

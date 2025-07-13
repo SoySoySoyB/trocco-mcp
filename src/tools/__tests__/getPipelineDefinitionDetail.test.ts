@@ -41,7 +41,9 @@ describe("GetPipelineDefinitionDetailTool", () => {
       description: "複数ジョブを連携するワークフロー",
       enabled: true,
     });
-    const result = await tool.execute({ pipeline_definition_id: 30 });
+    const result = await tool.execute({
+      path_params: { pipeline_definition_id: 30 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("30");
     expect(result.content[0].text).toContain("データ統合ワークフロー");
@@ -49,7 +51,9 @@ describe("GetPipelineDefinitionDetailTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ pipeline_definition_id: 30 });
+    const result = await tool.execute({
+      path_params: { pipeline_definition_id: 30 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -66,7 +70,9 @@ describe("GetPipelineDefinitionDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ pipeline_definition_id: 30 });
+    const result = await tool.execute({
+      path_params: { pipeline_definition_id: 30 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ワークフロー定義ID 30 の詳細取得に失敗しました",
@@ -85,7 +91,9 @@ describe("GetPipelineDefinitionDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ pipeline_definition_id: 99999 });
+    const result = await tool.execute({
+      path_params: { pipeline_definition_id: 99999 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ワークフロー定義ID 99999 の詳細取得に失敗しました",

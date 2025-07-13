@@ -38,7 +38,7 @@ describe("GetLabelsTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([
       { id: 1, name: "label1" },
     ]);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("label1");
   });
@@ -58,7 +58,10 @@ describe("GetLabelsTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([
       { id: 4, name: "label3" },
     ]);
-    const result = await tool.execute({ job_definition_id: 123, limit: 10 });
+    const result = await tool.execute({
+      query_params: { job_definition_id: 123 },
+      count: 10,
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("label3");
   });
@@ -66,7 +69,7 @@ describe("GetLabelsTool", () => {
   it("正常系: レスポンスが空配列の場合でも正常に返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([]);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("[]");
   });
@@ -80,7 +83,7 @@ describe("GetLabelsTool", () => {
       { id: 4, name: "label4", color: "#FFFF00" },
       { id: 5, name: "label5", color: "#FF00FF" },
     ]);
-    const result = await tool.execute({ fetch_all: true, limit: 1 });
+    const result = await tool.execute({ fetch_all: true });
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
     expect(data).toHaveLength(5);
@@ -96,8 +99,8 @@ describe("GetLabelsTool", () => {
       { id: 11, name: "bulk_label2" },
     ]);
     const result = await tool.execute({
-      job_definition_bulk_id: 456,
-      limit: 10,
+      query_params: { job_definition_bulk_id: 456 },
+      count: 10,
     });
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
@@ -111,8 +114,8 @@ describe("GetLabelsTool", () => {
       { id: 20, name: "datamart_label1" },
     ]);
     const result = await tool.execute({
-      datamart_definition_id: 789,
-      limit: 10,
+      query_params: { datamart_definition_id: 789 },
+      count: 10,
     });
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
@@ -128,8 +131,8 @@ describe("GetLabelsTool", () => {
       { id: 32, name: "pipeline_label3" },
     ]);
     const result = await tool.execute({
-      pipeline_definition_id: 999,
-      limit: 10,
+      query_params: { pipeline_definition_id: 999 },
+      count: 10,
     });
     expect(result.isError).toBeFalsy();
     const data = JSON.parse(result.content[0].text);
@@ -140,7 +143,7 @@ describe("GetLabelsTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -154,7 +157,7 @@ describe("GetLabelsTool", () => {
       content: [{ type: "text", text: "ラベル一覧の取得に失敗しました" }],
       isError: true,
     });
-    const result = await tool.execute({ limit: 10 });
+    const result = await tool.execute({ count: 10 });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("ラベル一覧の取得に失敗しました");
   });
@@ -165,12 +168,21 @@ describe("GetLabelsTool", () => {
       content: [{ type: "text", text: "ラベル一覧の取得に失敗しました" }],
       isError: true,
     });
-    const result1 = await tool.execute({ limit: 0 });
+    const result1 = await tool.execute({ count: 0 });
     expect(result1.isError).toBeTruthy();
     expect(result1.content[0].text).toContain("ラベル一覧の取得に失敗しました");
-    const result2 = await tool.execute({ limit: 201 });
+    const result2 = await tool.execute({ count: 201 });
     expect(result2.isError).toBeTruthy();
     expect(result2.content[0].text).toContain("ラベル一覧の取得に失敗しました");
+  });
+
+  it("異常系: fetch_allがtrueでcountも指定された場合、バリデーションエラーが発生する", () => {
+    expect(() => {
+      tool.parameters.parse({
+        fetch_all: true,
+        count: 10,
+      });
+    }).toThrow();
   });
 
   // 注意: 複数IDパラメータのバリデーションはZodのrefineで実装されているため、

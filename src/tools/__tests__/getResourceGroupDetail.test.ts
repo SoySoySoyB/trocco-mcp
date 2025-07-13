@@ -41,7 +41,9 @@ describe("GetResourceGroupDetailTool", () => {
       description: "本番環境で使用するリソースグループ",
       resource_count: 10,
     });
-    const result = await tool.execute({ resource_group_id: 20 });
+    const result = await tool.execute({
+      path_params: { resource_group_id: 20 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("20");
     expect(result.content[0].text).toContain("本番環境リソース");
@@ -49,7 +51,9 @@ describe("GetResourceGroupDetailTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ resource_group_id: 20 });
+    const result = await tool.execute({
+      path_params: { resource_group_id: 20 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -66,7 +70,9 @@ describe("GetResourceGroupDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ resource_group_id: 20 });
+    const result = await tool.execute({
+      path_params: { resource_group_id: 20 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "リソースグループID 20 の詳細取得に失敗しました",
@@ -85,7 +91,9 @@ describe("GetResourceGroupDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ resource_group_id: 99999 });
+    const result = await tool.execute({
+      path_params: { resource_group_id: 99999 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "リソースグループID 99999 の詳細取得に失敗しました",

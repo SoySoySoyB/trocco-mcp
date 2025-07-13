@@ -41,7 +41,9 @@ describe("GetTeamDetailTool", () => {
       description: "データ分析を担当するチーム",
       member_count: 5,
     });
-    const result = await tool.execute({ team_id: 10 });
+    const result = await tool.execute({
+      path_params: { team_id: 10 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("10");
     expect(result.content[0].text).toContain("データ分析チーム");
@@ -49,7 +51,9 @@ describe("GetTeamDetailTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ team_id: 10 });
+    const result = await tool.execute({
+      path_params: { team_id: 10 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -61,7 +65,9 @@ describe("GetTeamDetailTool", () => {
       content: [{ type: "text", text: "チームID 10 の詳細取得に失敗しました" }],
       isError: true,
     });
-    const result = await tool.execute({ team_id: 10 });
+    const result = await tool.execute({
+      path_params: { team_id: 10 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "チームID 10 の詳細取得に失敗しました",
@@ -77,7 +83,9 @@ describe("GetTeamDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ team_id: 99999 });
+    const result = await tool.execute({
+      path_params: { team_id: 99999 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "チームID 99999 の詳細取得に失敗しました",

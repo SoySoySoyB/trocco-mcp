@@ -106,7 +106,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const tool = TOOLS.find((t) => t.name === request.params.name);
   if (!tool) {
-    throw new Error("ツールが見つかりません。指定されたツール名: " + request.params.name);
+    throw new Error(
+      "ツールが見つかりません。指定されたツール名: " + request.params.name,
+    );
   }
   const input = tool.parameters.parse(request.params.arguments);
   return tool.execute(input);

@@ -4,16 +4,38 @@ import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL } from "../constants.js";
 import {
   troccoRequestWithPagination,
-  RequestOptionsInputSchema,
+  PaginationRequestOptionsInputSchema,
 } from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
-const GetDatamartDefinitionsInputSchema = z.object({
-  fetch_all: z.boolean().default(false).optional(),
-  name: z.string().optional(),
-  limit: z.number().min(1).max(200).default(200).optional(),
-});
+const GetDatamartDefinitionsInputSchema = z
+  .object({
+    fetch_all: z
+      .boolean()
+      .default(false)
+      .optional()
+      .describe("全件取得フラグ: trueの場合、countは指定不可"),
+    count: z
+      .number()
+      .min(1)
+      .optional()
+      .describe("取得したいアイテム数: fetch_allがtrueの場合は指定不可"),
+    query_params: z
+      .object({
+        name: z.string().optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      return !(data.fetch_all === true && data.count !== undefined);
+    },
+    {
+      message:
+        "fetch_allがtrueの場合、countを同時に指定することはできません。いずれか一方を指定してください。",
+    },
+  );
 
 export class GetDatamartDefinitionsTool implements IMCPTool {
   /**
@@ -50,18 +72,16 @@ export class GetDatamartDefinitionsTool implements IMCPTool {
       return apiKeyResult.errorResponse;
     }
     try {
-      const { fetch_all = false, ...query_params } = input;
-      const input_options = {
-        params: {
-          query_params: query_params,
-        },
-        fetch_all: fetch_all,
+      const options = {
+        fetch_all: input.fetch_all,
+        count: input.count,
+        query_params: input.query_params,
       };
-      const options = RequestOptionsInputSchema.parse(input_options);
+      const parsed_options = PaginationRequestOptionsInputSchema.parse(options);
       const datamart_definitions = await troccoRequestWithPagination(
         url,
         apiKeyResult.apiKey,
-        options,
+        parsed_options,
       );
       return {
         content: [

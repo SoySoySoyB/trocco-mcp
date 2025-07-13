@@ -38,6 +38,7 @@ src/
 - `MCP_NAME`: MCP サーバー名
 - `CONNECTION_TYPES`: 接続タイプの一覧（athena, bigquery, gcs 等）
 - `NOTIFICATION_TYPES`: 通知タイプの一覧（email, slack_channel）
+- `DEFAULT_API_LIMIT`: APIのデフォルトリミット値（200）
 
 新しい定数を追加する場合は、複数のツールで使用される可能性があるものは`constants.ts`に集約する。
 
@@ -49,13 +50,58 @@ src/
 
 新しいツールを追加する場合は、以下の構造に従う：
 
+##### 一覧取得系ツールの場合
+
 ```typescript
-const XxxInputSchema = z.object({
-  // パラメータの順序は必ず以下の通りにする
-  fetch_all: z.boolean().default(false).optional(),
-  limit: z.number().min(1).max(200).default(200).optional(),
-  // cursorパラメータは含めない（事前に指定できるものではないため）
-  // その他の必須パラメータはここに追加（describeは自明なものには付けない）
+const GetXxxsInputSchema = z
+  .object({
+    // パラメータの順序は必ず以下の通りにする
+    fetch_all: z
+      .boolean()
+      .default(false)
+      .optional()
+      .describe("全件取得フラグ: trueの場合、countは指定不可"),
+    count: z
+      .number()
+      .min(1)
+      .optional()
+      .describe("取得したいアイテム数: fetch_allがtrueの場合は指定不可"),
+    // パスパラメータがある場合
+    path_params: z.object({
+      resource_type: z.enum(RESOURCE_TYPES).describe("リソースタイプ"),
+    }),
+    // クエリパラメータがある場合
+    query_params: z
+      .object({
+        name: z.string().optional().describe("名前でフィルタリング"),
+        start_time: z
+          .string()
+          .optional()
+          .describe("開始時刻: YYYY-MM-DD HH:MM:SS形式"),
+      })
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      return !(data.fetch_all === true && data.count !== undefined);
+    },
+    {
+      message:
+        "fetch_allがtrueの場合、countを同時に指定することはできません。いずれか一方を指定してください。",
+    },
+  );
+```
+
+##### 詳細取得系ツールの場合
+
+```typescript
+const GetXxxDetailInputSchema = z.object({
+  // パスパラメータ（詳細取得では必須）
+  path_params: z.object({
+    resource_id: z.number().describe("リソースID"),
+    // 複数のパスパラメータが必要な場合
+    resource_type: z.enum(RESOURCE_TYPES).optional(),
+  }),
 });
 
 export class XxxTool implements IMCPTool {
@@ -87,6 +133,19 @@ export class XxxTool implements IMCPTool {
   }
 }
 ```
+
+**パラメータ設計の原則**:
+
+- **path_params**: URLパスに含まれるパラメータ（例: `/api/users/{user_id}` の `user_id`）
+  - 必須パラメータとして定義
+  - リソースの特定に使用（ID、タイプなど）
+- **query_params**: URLクエリパラメータ（例: `?name=test&limit=10`）
+  - オプショナルパラメータとして定義（`.optional()`を付ける）
+  - フィルタリングや検索条件に使用
+- **describe**: パラメータの説明は、自明でない場合のみ付ける
+  - 良い例: `start_time: z.string().describe("開始時刻: YYYY-MM-DD HH:MM:SS形式")`
+  - 悪い例: `user_id: z.number().describe("ユーザーID")` （自明なので不要）
+- **cursorパラメータ**: 含めない（内部的にページネーション処理で使用されるため）
 
 **重要な注意事項**:
 
@@ -153,8 +212,8 @@ export class XxxTool implements IMCPTool {
 ##### 7. 特殊なテストケースの実装方法
 
 - **ページネーションのテスト（`fetch_all`）**
-  - `fetch_all: true`と`limit: 1`を組み合わせて、確実にページネーションが発生するようにする
-  - デフォルトの limit が大きい場合、`fetch_all`単体では意味をなさない
+  - `fetch_all: true`を指定して全件取得が動作することを確認する
+  - `fetch_all: true`と`count`を同時指定して、バリデーションエラーが発生することを確認する
 
 ### 新機能追加時のチェックリスト
 
@@ -162,7 +221,11 @@ export class XxxTool implements IMCPTool {
 - [ ] エンドポイントに対応するドキュメントで仕様の詳細を確認
 - [ ] 既存のツールと重複していないか確認（特に似た名前のツールに注意）
 - [ ] ツールクラスを作成し、`IMCPTool`インターフェースを実装（型パラメータなし）
-- [ ] 入力パラメータの Zod スキーマを定義（順序: fetch_all → パスパラメータ → クエリパラメータ、cursor は含めない）
+- [ ] 入力パラメータの Zod スキーマを定義
+  - 一覧系: fetch_all → count → path_params → query_params の順序
+  - 詳細系: path_params → query_params の順序
+  - cursorパラメータは含めない
+- [ ] 一覧系の場合: fetch_allとcountの相互排他バリデーションをrefineで実装
 - [ ] 既存の実装を参考にして、正常系・異常系のテストを作成
 - [ ] `src/index.ts`の TOOLS 配列に追加
 - [ ] `npm test`でテストが通ることを確認

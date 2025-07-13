@@ -16,3 +16,5 @@ export const CONNECTION_TYPES = [
 ] as const;
 
 export const NOTIFICATION_TYPES = ["email", "slack_channel"] as const;
+
+export const DEFAULT_API_LIMIT = 200;

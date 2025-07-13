@@ -2,12 +2,17 @@ import { z } from "zod";
 import { IMCPTool } from "../index.js";
 import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL } from "../constants.js";
-import { troccoRequest } from "../utils/requestTROCCO.js";
+import {
+  troccoRequest,
+  RequestOptionsInputSchema,
+} from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 const GetTeamDetailInputSchema = z.object({
-  team_id: z.number(),
+  path_params: z.object({
+    team_id: z.number(),
+  }),
 });
 
 export class GetTeamDetailTool implements IMCPTool {
@@ -36,14 +41,20 @@ export class GetTeamDetailTool implements IMCPTool {
     content: TextContent[];
     isError?: boolean;
   }> {
-    const path = `/api/teams/${input.team_id}`;
+    const path = `/api/teams/${input.path_params.team_id}`;
     const url = `${BASE_URL}${path}`;
     const apiKeyResult = validateApiKey();
     if (apiKeyResult.isInvalid) {
       return apiKeyResult.errorResponse;
     }
     try {
-      const team = await troccoRequest(url, apiKeyResult.apiKey, {});
+      const options = {};
+      const parsed_options = RequestOptionsInputSchema.parse(options);
+      const team = await troccoRequest(
+        url,
+        apiKeyResult.apiKey,
+        parsed_options,
+      );
       return {
         content: [
           {
@@ -55,7 +66,7 @@ export class GetTeamDetailTool implements IMCPTool {
     } catch (error) {
       return createErrorResponse(
         error,
-        `チームID ${input.team_id} の詳細取得に失敗しました`,
+        `チームID ${input.path_params.team_id} の詳細取得に失敗しました`,
       );
     }
   }

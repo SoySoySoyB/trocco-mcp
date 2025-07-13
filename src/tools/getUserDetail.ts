@@ -2,12 +2,17 @@ import { z } from "zod";
 import { IMCPTool } from "../index.js";
 import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL } from "../constants.js";
-import { troccoRequest } from "../utils/requestTROCCO.js";
+import {
+  troccoRequest,
+  RequestOptionsInputSchema,
+} from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 const GetUserDetailInputSchema = z.object({
-  user_id: z.number(),
+  path_params: z.object({
+    user_id: z.number(),
+  }),
 });
 
 export class GetUserDetailTool implements IMCPTool {
@@ -36,14 +41,20 @@ export class GetUserDetailTool implements IMCPTool {
     content: TextContent[];
     isError?: boolean;
   }> {
-    const path = `/api/users/${input.user_id}`;
+    const path = `/api/users/${input.path_params.user_id}`;
     const url = `${BASE_URL}${path}`;
     const apiKeyResult = validateApiKey();
     if (apiKeyResult.isInvalid) {
       return apiKeyResult.errorResponse;
     }
     try {
-      const user = await troccoRequest(url, apiKeyResult.apiKey, {});
+      const options = {};
+      const parsed_options = RequestOptionsInputSchema.parse(options);
+      const user = await troccoRequest(
+        url,
+        apiKeyResult.apiKey,
+        parsed_options,
+      );
       return {
         content: [
           {
@@ -55,7 +66,7 @@ export class GetUserDetailTool implements IMCPTool {
     } catch (error) {
       return createErrorResponse(
         error,
-        `ユーザーID ${input.user_id} の詳細取得に失敗しました`,
+        `ユーザーID ${input.path_params.user_id} の詳細取得に失敗しました`,
       );
     }
   }

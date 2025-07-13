@@ -41,7 +41,9 @@ describe("GetPipelineJobDetailTool", () => {
       pipeline_definition_name: "ワークフロー",
       status: "succeeded",
     });
-    const result = await tool.execute({ pipeline_job_id: 300 });
+    const result = await tool.execute({
+      path_params: { pipeline_job_id: 300 },
+    });
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("300");
     expect(result.content[0].text).toContain("ワークフロー");
@@ -49,7 +51,9 @@ describe("GetPipelineJobDetailTool", () => {
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
-    const result = await tool.execute({ pipeline_job_id: 300 });
+    const result = await tool.execute({
+      path_params: { pipeline_job_id: 300 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain("APIキーエラー");
   });
@@ -66,7 +70,9 @@ describe("GetPipelineJobDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ pipeline_job_id: 300 });
+    const result = await tool.execute({
+      path_params: { pipeline_job_id: 300 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ワークフロージョブID 300 の詳細取得に失敗しました",
@@ -85,7 +91,9 @@ describe("GetPipelineJobDetailTool", () => {
       ],
       isError: true,
     });
-    const result = await tool.execute({ pipeline_job_id: 99999 });
+    const result = await tool.execute({
+      path_params: { pipeline_job_id: 99999 },
+    });
     expect(result.isError).toBeTruthy();
     expect(result.content[0].text).toContain(
       "ワークフロージョブID 99999 の詳細取得に失敗しました",

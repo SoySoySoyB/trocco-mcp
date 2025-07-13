@@ -57,7 +57,9 @@ describe("GetNotificationsTool", () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(troccoRequestWithPagination).mockResolvedValue(mockResponse);
 
-    const result = await tool.execute({ notification_type: "email" });
+    const result = await tool.execute({
+      path_params: { notification_type: "email" },
+    });
 
     expect(result.isError).toBeUndefined();
     expect(result.content).toHaveLength(1);
@@ -82,8 +84,8 @@ describe("GetNotificationsTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue(mockResponse);
 
     const result = await tool.execute({
-      notification_type: "slack_channel",
-      limit: 10,
+      path_params: { notification_type: "slack_channel" },
+      count: 10,
     });
 
     expect(result.isError).toBeUndefined();
@@ -105,7 +107,7 @@ describe("GetNotificationsTool", () => {
     vi.mocked(troccoRequestWithPagination).mockResolvedValue(mockResponse);
 
     const result = await tool.execute({
-      notification_type: "email",
+      path_params: { notification_type: "email" },
       fetch_all: true,
     });
 
@@ -120,7 +122,9 @@ describe("GetNotificationsTool", () => {
     vi.mocked(validateApiKey).mockReturnValue(validApiKeyResult);
     vi.mocked(troccoRequestWithPagination).mockResolvedValue([]);
 
-    const result = await tool.execute({ notification_type: "slack_channel" });
+    const result = await tool.execute({
+      path_params: { notification_type: "slack_channel" },
+    });
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toBe("[]");
@@ -128,14 +132,18 @@ describe("GetNotificationsTool", () => {
 
   it("異常系: 無効な通知タイプを指定した場合、バリデーションエラーが発生する", () => {
     expect(() => {
-      tool.parameters.parse({ notification_type: "invalid_type" });
+      tool.parameters.parse({
+        path_params: { notification_type: "invalid_type" },
+      });
     }).toThrow();
   });
 
   it("異常系: APIキーが無効な場合、エラーレスポンスが返る", async () => {
     vi.mocked(validateApiKey).mockReturnValue(invalidApiKeyResult);
 
-    const result = await tool.execute({ notification_type: "email" });
+    const result = await tool.execute({
+      path_params: { notification_type: "email" },
+    });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toBe("APIキーエラー");
@@ -156,7 +164,9 @@ describe("GetNotificationsTool", () => {
       isError: true,
     });
 
-    const result = await tool.execute({ notification_type: "email" });
+    const result = await tool.execute({
+      path_params: { notification_type: "email" },
+    });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain(
@@ -169,13 +179,22 @@ describe("GetNotificationsTool", () => {
     );
   });
 
-  it("異常系: limitが範囲外の場合、バリデーションエラーが発生する", () => {
+  it("異常系: countが0以下の場合、バリデーションエラーが発生する", () => {
     expect(() => {
-      tool.parameters.parse({ notification_type: "email", limit: 0 });
+      tool.parameters.parse({
+        path_params: { notification_type: "email" },
+        count: 0,
+      });
     }).toThrow();
+  });
 
+  it("異常系: fetch_allがtrueでcountも指定された場合、バリデーションエラーが発生する", () => {
     expect(() => {
-      tool.parameters.parse({ notification_type: "email", limit: 201 });
+      tool.parameters.parse({
+        path_params: { notification_type: "email" },
+        fetch_all: true,
+        count: 10,
+      });
     }).toThrow();
   });
 });

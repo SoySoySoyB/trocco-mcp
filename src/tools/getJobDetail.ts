@@ -2,12 +2,17 @@ import { z } from "zod";
 import { IMCPTool } from "../index.js";
 import { validateApiKey } from "../utils/validateApiKey.js";
 import { BASE_URL } from "../constants.js";
-import { troccoRequest } from "../utils/requestTROCCO.js";
+import {
+  troccoRequest,
+  RequestOptionsInputSchema,
+} from "../utils/requestTROCCO.js";
 import { createErrorResponse } from "../utils/createErrorResponse.js";
 import type { TextContent } from "@modelcontextprotocol/sdk/types.js";
 
 const GetJobDetailInputSchema = z.object({
-  job_id: z.number(),
+  path_params: z.object({
+    job_id: z.number(),
+  }),
 });
 
 export class GetJobDetailTool implements IMCPTool {
@@ -36,14 +41,16 @@ export class GetJobDetailTool implements IMCPTool {
     content: TextContent[];
     isError?: boolean;
   }> {
-    const path = `/api/jobs/${input.job_id}`;
+    const path = `/api/jobs/${input.path_params.job_id}`;
     const url = `${BASE_URL}${path}`;
     const apiKeyResult = validateApiKey();
     if (apiKeyResult.isInvalid) {
       return apiKeyResult.errorResponse;
     }
     try {
-      const job = await troccoRequest(url, apiKeyResult.apiKey, {});
+      const options = {};
+      const parsed_options = RequestOptionsInputSchema.parse(options);
+      const job = await troccoRequest(url, apiKeyResult.apiKey, parsed_options);
       return {
         content: [
           {
@@ -55,7 +62,7 @@ export class GetJobDetailTool implements IMCPTool {
     } catch (error) {
       return createErrorResponse(
         error,
-        `転送ジョブID ${input.job_id} の詳細取得に失敗しました`,
+        `転送ジョブID ${input.path_params.job_id} の詳細取得に失敗しました`,
       );
     }
   }
