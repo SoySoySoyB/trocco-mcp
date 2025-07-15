@@ -12,6 +12,7 @@ import { GetConnectionConfigurationsTool } from "./tools/getConnectionConfigurat
 import { GetDatamartDefinitionDetailTool } from "./tools/getDatamartDefinitionDetail.js";
 import { GetDatamartDefinitionsTool } from "./tools/getDatamartDefinitions.js";
 import { GetJobDefinitionDetailTool } from "./tools/getJobDefinitionDetail.js";
+import { GetJobDefinitionsTool } from "./tools/getJobDefinitions.js";
 import { GetJobDetailTool } from "./tools/getJobDetail.js";
 import { GetJobsTool } from "./tools/getJobs.js";
 import { GetLabelDetailTool } from "./tools/getLabelDetail.js";
@@ -65,6 +66,7 @@ const TOOLS: IMCPTool[] = [
   new GetDatamartDefinitionDetailTool(),
   new GetDatamartDefinitionsTool(),
   new GetJobDefinitionDetailTool(),
+  new GetJobDefinitionsTool(),
   new GetJobDetailTool(),
   new GetJobsTool(),
   new GetLabelDetailTool(),
